@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "coffeescript": "^2.0.0-beta2"
+  },
+  "dependencies": {
+    "socks": "^1.1.10"
+  }
+}
