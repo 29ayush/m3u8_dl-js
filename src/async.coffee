@@ -11,6 +11,14 @@ read_file = (file_path) ->
       else
         resolve data
 
+read_file_byte = (filename) ->
+  new Promise (resolve, reject) ->
+    fs.readFile filename, (err, data) ->
+      if err
+        reject err
+      else
+        resolve data
+
 write_file = (file_path, text) ->
   new Promise (resolve, reject) ->
     fs.writeFile file_path, text, 'utf8', (err) ->
@@ -58,6 +66,7 @@ rm = (file_path) ->
 
 module.exports = {
   read_file  # async
+  read_file_byte  # async
   write_file  # async
 
   mv  # async

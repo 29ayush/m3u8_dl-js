@@ -75,12 +75,16 @@ dl_one_file = (m3u8_info, index) ->
   catch e
     log.e "dl_one_file: #{name.ts}: download error ! "
     throw e
-  # download one file done, rename it
-  await async_.mv name.part, name.encrypted
-
-  await _decrypt_clip name, clip
+  # check need decrypt clip
+  if config.m3u8_key()?
+    # download one file done, rename it
+    await async_.mv name.part, name.encrypted
+    await _decrypt_clip name, clip
+    await async_.mv name.ts_tmp, name.ts
+    # TODO remove encrypted (tmp) clip file ?
+  else  # no need to decrypt
+    await async_.mv name.part, namets
   # download one clip done
-  await async_.mv name.ts_tmp, name.ts
 
 
 module.exports = dl_one_file  # async

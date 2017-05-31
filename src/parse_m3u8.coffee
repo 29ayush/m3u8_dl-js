@@ -15,6 +15,7 @@ _split_lines = (raw_text) ->
 _parse_key = (raw_line) ->
   # support key line: `#EXT-X-KEY:METHOD=AES-128,URI="http://XXXX.key"`
 
+  # TODO support parse IV
   # TODO support more format parse
   o = {}
   rest = raw_line

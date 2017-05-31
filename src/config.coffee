@@ -1,7 +1,7 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.1.0-1 test20170531 2341'
+P_VERSION = 'm3u8_dl-js version 0.1.0-1 test20170601 0213'
 
 
 # local file struct
@@ -40,6 +40,17 @@ m3u8_iv = (iv) ->
     _etc._m3u8_iv = iv
   _etc._m3u8_iv
 
+dl_thread = (t) ->
+  if t?
+    _etc.dl_thread = t
+  _etc.dl_thread
+
+# download files to (default current dir)
+output_dir = (d) ->
+  if d?
+    _etc.output_dir = d
+  _etc.output_dir
+
 
 module.exports = {
   P_VERSION
@@ -58,4 +69,5 @@ module.exports = {
   m3u8_base_url  # get /set
   m3u8_key  # get / set
   m3u8_iv  # get / set
+  dl_thread  # get / set
 }
