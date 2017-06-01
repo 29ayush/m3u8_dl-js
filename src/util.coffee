@@ -1,6 +1,8 @@
 # util.coffee, m3u8_dl-js/src/
 
 url = require 'url'
+http = require 'http'
+fs = require 'fs'
 
 async_ = require './async'
 log = require './log'
@@ -62,11 +64,8 @@ dl_with_proxy = (file_url, filename) ->
         port: info.port
         path: info.path
       }
-    # make http request
-    req = http.request opt
-    req.on 'error', (err) ->
-      reject err
-    req.on 'response', (res) ->
+
+    _on_res = (res) ->
       # check res code
       if res.statusCode != 200
         reject new Error "res code `#{res.statusCode}` is not 200 !"
@@ -80,6 +79,17 @@ dl_with_proxy = (file_url, filename) ->
         reject err
       w.on 'finish', () ->
         resolve()
+    # make http request
+    req = http.request opt, _on_res
+    req.on 'error', (err) ->
+      reject err
+    req.on 'aborted', (err) ->
+      if err?
+        reject err
+      else
+        reject new Error "aborted"
+    # DO start request
+    req.end()
 
 
 module.exports = {

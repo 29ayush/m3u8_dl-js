@@ -2,7 +2,7 @@
 
 url = require 'url'
 path = require 'path'
-http = require 'http'
+fs = require 'fs'
 
 async_ = require './async'
 util = require './util'
@@ -21,9 +21,8 @@ _check_clip_base_url = (name, clip_url) ->
       throw new Error "no base URL"
     base_url = url.parse base
     # merge base url
-    o.pathname = path.join path.dirname(base_url.pathname), o.pathname
-  # FIXME maybe error ?
-  url.format o
+    base_url.pathname = path.join path.dirname(base_url.pathname), o.pathname
+  url.format base_url
 
 _decrypt_clip = (clip) ->
   new Promise (resolve, reject) ->

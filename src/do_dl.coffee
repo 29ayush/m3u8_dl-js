@@ -57,10 +57,11 @@ _check_change_cwd = ->
   to = config.output_dir()
   if ! to?
     return
+  to_path = path.resolve to
   process.chdir to
   cwd = process.cwd()
-  if path.resolve(cwd) != path.resolve(to)
-    log.w "can not change current directory to `#{to}`, current directory is `#{cwd}`"
+  if path.resolve(cwd) != to_path
+    log.w "can not change current directory to `#{to_path}`, current directory is `#{cwd}`"
   # check lock file
   await util.create_lock_file config.LOCK_FILE
 
@@ -93,7 +94,8 @@ _download_clips = (m3u8_info) ->
   log.d "start download #{m3u8_info.clip.length} clips "
   # TODO more error process
   for i in [0... m3u8_info.clip.length]
-    dl_one_file m3u8_info, i
+    # FIXME
+    await dl_one_file m3u8_info, i
 
 
 do_dl = (m3u8) ->
@@ -122,7 +124,7 @@ do_dl = (m3u8) ->
   # parse m3u8 text, and create meta file
   m3u8_info = parse_m3u8 m3u8_text
   # create clip filename
-  m3u8_info = _make_file_name m3u8_info
+  m3u8_info = _make_filename m3u8_info
 
   await _create_meta_file m3u8, m3u8_info
   await _create_list_file m3u8_info

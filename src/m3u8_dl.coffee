@@ -45,7 +45,7 @@ _p_arg = (args) ->
     p = raw.split ':'
     o = {
       hostname: p[0]
-      port: p[1]
+      port: Number.parseInt p[1]
     }
 
   o = {}
