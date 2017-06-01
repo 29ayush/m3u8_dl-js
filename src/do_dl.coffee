@@ -1,6 +1,7 @@
 # do_dl.coffee, m3u8_dl-js/src/
 
 path = require 'path'
+fs = require 'fs'
 
 async_ = require './async'
 util = require './util'
@@ -22,9 +23,35 @@ _create_meta_file = (m3u8, m3u8_info) ->
   text = util.print_json o
   await util.write_file config.META_FILE, text
 
+_make_filename = (m3u8_info) ->
+  _add_zero = (raw, len) ->
+    while raw.length < len
+      raw = '0' + raw
+    raw
+  len = m3u8_info.clip.length.toString().length
+
+  _one_filename = (index) ->
+    base = _add_zero('' + index, len)
+    # output
+    {
+      part: base + config.CLIP_SUFFIX_DL_PART
+      encrypted: base + config.CLIP_SUFFIX_ENCRYPTED
+      ts_tmp: base + config.CLIP_SUFFIX_TS + util.WRITE_REPLACE_FILE_SUFFIX
+      ts: base + config.CLIP_SUFFIX_TS
+    }
+  for i in [0... m3u8_info.clip.length]
+    c = m3u8_info.clip[i]
+    c.name = _one_filename i
+  m3u8_info
+
 # create ffmpeg merge list
 _create_list_file = (m3u8_info) ->
-  # TODO
+  o = []
+  for c in m3u8_info.clip
+    o.push "file \'#{c.name.ts}\'"
+  text = o.join('\n') + '\n'
+  # write list file
+  await util.write_file config.LIST_FILE, text
 
 _check_change_cwd = ->
   to = config.output_dir()
@@ -35,8 +62,12 @@ _check_change_cwd = ->
   if path.resolve(cwd) != path.resolve(to)
     log.w "can not change current directory to `#{to}`, current directory is `#{cwd}`"
   # check lock file
-  util.create_lock_file config.LOCK_FILE
-  # TODO remove LOCK on process exit
+  await util.create_lock_file config.LOCK_FILE
+
+  _remove_lock = ->
+    fs.unlinkSync config.LOCK_FILE
+  # remove LOCK on process exit
+  process.on 'exit', _remove_lock
 
 _check_and_download_key = (m3u8_info) ->
   if config.m3u8_key()?
@@ -73,7 +104,7 @@ do_dl = (m3u8) ->
     if ! config.m3u8_base_url()?  # not override command line
       config.m3u8_base_url m3u8  # set base_url
     # change working directory now
-    _check_change_cwd()
+    await _check_change_cwd()
     # download that m3u8 file
     log.d "download m3u8 file #{m3u8}"
     dl_tmp_file = config.RAW_M3U8 + util.WRITE_REPLACE_FILE_SUFFIX
@@ -82,7 +113,7 @@ do_dl = (m3u8) ->
     # read that text
     m3u8_text = await async_.read_file config.RAW_M3U8
   else  # local file
-    log.d "local m3u8 file: #{path.resolve m3u8}"
+    log.d "local m3u8 file #{path.resolve m3u8}"
     m3u8_text = await async_.read_file m3u8
     # change working directory here
     _check_change_cwd()
@@ -90,6 +121,9 @@ do_dl = (m3u8) ->
     await util.write_file config.RAW_M3U8, m3u8_text
   # parse m3u8 text, and create meta file
   m3u8_info = parse_m3u8 m3u8_text
+  # create clip filename
+  m3u8_info = _make_file_name m3u8_info
+
   await _create_meta_file m3u8, m3u8_info
   await _create_list_file m3u8_info
 

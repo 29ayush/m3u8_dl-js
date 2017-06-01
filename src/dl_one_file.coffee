@@ -11,22 +11,7 @@ config = require './config'
 decrypt = require './decrypt'
 
 
-_add_zero = (raw, len) ->
-  while raw.length < len
-    raw = '0' + raw
-  raw
-
-_make_filename = (m3u8_info, index) ->
-  len = m3u8_info.clip.length.toString().length
-  base = _add_zero('' + index, len)
-  # output
-  {
-    part: base + config.CLIP_SUFFIX_DL_PART
-    encrypted: base + config.CLIP_SUFFIX_ENCRYPTED
-    ts_tmp: base + config.CLIP_SUFFIX_TS + util.WRITE_REPLACE_FILE_SUFFIX
-    ts: base + config.CLIP_SUFFIX_TS
-  }
-
+# TODO move this in ./do_dl ?
 _check_clip_base_url = (name, clip_url) ->
   o = url.parse clip_url
   if ! o.protocol?
@@ -40,14 +25,14 @@ _check_clip_base_url = (name, clip_url) ->
   # FIXME maybe error ?
   url.format o
 
-_decrypt_clip = (name, clip) ->
+_decrypt_clip = (clip) ->
   new Promise (resolve, reject) ->
     iv = config.m3u8_iv()
     if ! iv?
       iv = clip.media_sequence
     c = decrypt.create_decrypt_stream(config.m3u8_key(), iv)
-    r = fs.createReadStream name.encrypted
-    w = fs.createWriteStream name.ts_tmp
+    r = fs.createReadStream clip.name.encrypted
+    w = fs.createWriteStream clip.name.ts_tmp
     r.pipe(c).pipe(w)
     r.on 'error', (err) ->
       reject err
@@ -60,30 +45,29 @@ _decrypt_clip = (name, clip) ->
 
 
 dl_one_file = (m3u8_info, index) ->
-  name = _make_filename m3u8_info, index
-  # check already exist and skip it
-  if await async_.file_exist(name.ts)
-    log.d "dl_one_file: skip exist file #{name.ts}"
-    return
   clip = m3u8_info.clip[index]
+  # check already exist and skip it
+  if await async_.file_exist(clip.name.ts)
+    log.d "dl_one_file: skip exist file #{clip.name.ts}"
+    return
   # download file (support proxy)
   try
-    clip_url = _check_clip_base_url name, clip.url
+    clip_url = _check_clip_base_url clip.name, clip.url
     # DEBUG
-    log.d "dl_one_file: #{name.ts}: start download #{clip_url}"
-    await util.dl_with_proxy clip_url, name.part
+    log.d "dl_one_file: #{clip.name.ts}: start download #{clip_url}"
+    await util.dl_with_proxy clip_url, clip.name.part
   catch e
-    log.e "dl_one_file: #{name.ts}: download error ! "
+    log.e "dl_one_file: #{clip.name.ts}: download error ! "
     throw e
   # check need decrypt clip
   if config.m3u8_key()?
     # download one file done, rename it
-    await async_.mv name.part, name.encrypted
-    await _decrypt_clip name, clip
-    await async_.mv name.ts_tmp, name.ts
+    await async_.mv clip.name.part, clip.name.encrypted
+    await _decrypt_clip clip
+    await async_.mv clip.name.ts_tmp, clip.name.ts
     # TODO remove encrypted (tmp) clip file ?
   else  # no need to decrypt
-    await async_.mv name.part, namets
+    await async_.mv clip.name.part, clip.name.ts
   # download one clip done
 
 
