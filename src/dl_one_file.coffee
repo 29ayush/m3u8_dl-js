@@ -13,6 +13,8 @@ decrypt = require './decrypt'
 
 # TODO move this in ./do_dl ?
 _check_clip_base_url = (name, clip_url) ->
+  _path = path.posix  # FIX url path on Windows
+
   o = url.parse clip_url
   if ! o.protocol?
     base = config.m3u8_base_url()
@@ -21,7 +23,7 @@ _check_clip_base_url = (name, clip_url) ->
       throw new Error "no base URL"
     base_url = url.parse base
     # merge base url
-    base_url.pathname = path.join path.dirname(base_url.pathname), o.pathname
+    base_url.pathname = _path.join _path.dirname(base_url.pathname), o.pathname
   url.format base_url
 
 _decrypt_clip = (clip) ->
