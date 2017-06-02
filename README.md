@@ -31,7 +31,10 @@ Usage:
       --proxy-http IP:PORT    Set http proxy
       --proxy-socks5 IP:PORT  Set socks5 proxy
 
-      --thread NUM  Set number of download thread (default: 1)
+      --thread NUM   Set number of download thread (default: 1)
+      --auto-remove  Remove raw file after decrypt success
+
+      --header NAME:VALUE  Set http header (can use more than once)
 
       --m3u8-base-url URL       Set base URL of the m3u8 file
       --m3u8-key HEX            Set decrypt KEY (in HEX format)
