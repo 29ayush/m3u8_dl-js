@@ -1,6 +1,7 @@
 # do_dl.coffee, m3u8_dl-js/src/
 
 path = require 'path'
+url = require 'url'
 fs = require 'fs'
 
 async_ = require './async'
@@ -8,7 +9,7 @@ util = require './util'
 log = require './log'
 config = require './config'
 parse_m3u8 = require './parse_m3u8'
-dl_one_file = require './dl_one_file'
+dl_clip = require './dl_clip'
 thread_pool = require './thread_pool'
 
 
@@ -44,6 +45,30 @@ _make_filename = (m3u8_info) ->
     c.name = _one_filename i
   m3u8_info
 
+# check and process clip base url
+_check_clip_base_url = (m3u8_info) ->
+  _check_one_clip = (name, raw_url) ->
+    _path = path.posix  # FIX url path on Windows
+
+    o = url.parse raw_url
+    if ! o.protocol?
+      base = config.m3u8_base_url()
+      if ! base?
+        log.e "no base URL for m3u8 clip #{name.ts}"
+        throw new Error "no base URL"
+      base_url = url.parse base
+      # merge base url
+      base_url.pathname = _path.join base_url.pathname, o.pathname
+      url.format base_url
+    else
+      raw_url
+  # DEBUG
+  if config.m3u8_base_url()?
+    log.d "base URL #{config.m3u8_base_url()}"
+  for c in m3u8_info.clip
+    c.clip_url = _check_one_clip c.name, c.url
+  m3u8_info
+
 # create ffmpeg merge list
 _create_list_file = (m3u8_info) ->
   o = []
@@ -71,8 +96,21 @@ _check_change_cwd = ->
   process.on 'exit', _remove_lock
 
 _check_and_download_key = (m3u8_info) ->
+  _save_key = ->
+    # save KEY and IV in meta file
+    if config.m3u8_key()?
+      m3u8_info.decrypt = {
+        key: config.m3u8_key().toString 'base64'
+      }
+      if config.m3u8_iv()?
+        m3u8_info.decrypt.iv = config.m3u8_iv().toString 'base64'
+
   if config.m3u8_key()?
-    return  # do not override command line
+    # DEBUG
+    log.d "use KEY #{config.m3u8_key().toString('hex')} (#{config.m3u8_key().toString('base64')})"
+
+    _save_key()
+    return m3u8_info  # do not override command line
   if ! m3u8_info.key?
     return  # no encrypt key info
   # check key method
@@ -85,26 +123,45 @@ _check_and_download_key = (m3u8_info) ->
   # read key
   key = await async_.read_file_byte config.RAW_KEY
   config.m3u8_key key  # save to config
+  # TODO support iv ?
+
+  _save_key()
+  m3u8_info
 
 _download_clips = (m3u8_info) ->
   worker = (item) ->
     # TODO
   # TODO download with multi-thread ?
   # FIXME no just use loop
-  log.d "start download #{m3u8_info.clip.length} clips "
+  log.d "download #{m3u8_info.clip.length} clips "
   # TODO more error process
   for i in [0... m3u8_info.clip.length]
     # FIXME
-    await dl_one_file m3u8_info, i
-
+    await dl_clip m3u8_info, i
 
 do_dl = (m3u8) ->
+  # DEBUG
+  if config.proxy()?
+    log.d "use proxy #{JSON.stringify config.proxy()}"
+
+  _set_base_url = (raw_url) ->
+    _path = path.posix
+    o = url.parse raw_url
+    # clear values
+    o.hash = null
+    o.search = null
+    o.query = null
+    o.path = null
+    o.href = null
+
+    o.pathname = _path.dirname o.pathname
+    config.m3u8_base_url url.format(o)
   # check is remote file (http) or local file
   # TODO support https:// ?
   if m3u8.startsWith 'http://'
     # remote file
     if ! config.m3u8_base_url()?  # not override command line
-      config.m3u8_base_url m3u8  # set base_url
+      _set_base_url m3u8  # set base_url
     # change working directory now
     await _check_change_cwd()
     # download that m3u8 file
@@ -125,15 +182,15 @@ do_dl = (m3u8) ->
   m3u8_info = parse_m3u8 m3u8_text
   # create clip filename
   m3u8_info = _make_filename m3u8_info
+  m3u8_info = _check_clip_base_url m3u8_info
+
+  # check and download key file (before create meta file to save key)
+  await _check_and_download_key m3u8_info
 
   await _create_meta_file m3u8, m3u8_info
   await _create_list_file m3u8_info
 
-  # check and download key file
-  await _check_and_download_key m3u8_info
-
   await _download_clips m3u8_info
-  # FIXME
   log.d "[ OK ] all download done. "
 
 

@@ -1,7 +1,5 @@
-# dl_one_file.coffee, m3u8_dl-js/src/
+# dl_clip.coffee, m3u8_dl-js/src/
 
-url = require 'url'
-path = require 'path'
 fs = require 'fs'
 
 async_ = require './async'
@@ -11,22 +9,8 @@ config = require './config'
 decrypt = require './decrypt'
 
 
-# TODO move this in ./do_dl ?
-_check_clip_base_url = (name, clip_url) ->
-  _path = path.posix  # FIX url path on Windows
-
-  o = url.parse clip_url
-  if ! o.protocol?
-    base = config.m3u8_base_url()
-    if ! base?
-      log.e "dl_one_file: #{name.ts}: no base URL "
-      throw new Error "no base URL"
-    base_url = url.parse base
-    # merge base url
-    base_url.pathname = _path.join _path.dirname(base_url.pathname), o.pathname
-  url.format base_url
-
 _decrypt_clip = (clip) ->
+  # TODO FIXME check decrypt success (by file_size)
   new Promise (resolve, reject) ->
     iv = config.m3u8_iv()
     if ! iv?
@@ -44,21 +28,20 @@ _decrypt_clip = (clip) ->
     w.on 'finish', () ->
       resolve()
 
-
-dl_one_file = (m3u8_info, index) ->
+dl_clip = (m3u8_info, index) ->
   clip = m3u8_info.clip[index]
   # check already exist and skip it
   if await async_.file_exist(clip.name.ts)
-    log.d "dl_one_file: skip exist file #{clip.name.ts}"
+    log.d "dl_clip: skip exist file #{clip.name.ts}"
     return
   # download file (support proxy)
   try
-    clip_url = _check_clip_base_url clip.name, clip.url
+    clip_url = clip.clip_url
     # DEBUG
-    log.d "dl_one_file: #{clip.name.ts}: start download #{clip_url}"
+    log.d "dl_clip: #{clip.name.ts}: #{clip_url}"
     await util.dl_with_proxy clip_url, clip.name.part
   catch e
-    log.e "dl_one_file: #{clip.name.ts}: download error ! "
+    log.e "dl_clip: #{clip.name.ts}: download error ! "
     throw e
   # check need decrypt clip
   if config.m3u8_key()?
@@ -72,4 +55,4 @@ dl_one_file = (m3u8_info, index) ->
   # download one clip done
 
 
-module.exports = dl_one_file  # async
+module.exports = dl_clip  # async
