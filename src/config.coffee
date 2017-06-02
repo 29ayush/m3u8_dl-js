@@ -1,7 +1,7 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.1.0-2 test20170602 2010'
+P_VERSION = 'm3u8_dl-js version 0.1.0 test20170602 2052'
 
 
 # local file struct
