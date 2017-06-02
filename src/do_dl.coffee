@@ -154,7 +154,7 @@ _download_clips = (m3u8_info) ->
   if (! thread_n?) || (thread_n <= 1)
     await _single_thread()
   else
-    log.d "dl_thread #{thread_n}"
+    log.d "  with #{thread_n} threads "
     await _multi_thread thread_n
 
 
