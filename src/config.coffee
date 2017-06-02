@@ -1,7 +1,7 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.1.0 test20170602 2052'
+P_VERSION = 'm3u8_dl-js version 0.2.0-1 test20170602 2256'
 
 
 # local file struct
@@ -51,6 +51,17 @@ output_dir = (d) ->
     _etc.output_dir = d
   _etc.output_dir
 
+auto_remove = (a) ->
+  if a?
+    _etc.auto_remove = a
+  _etc.auto_remove
+
+# TODO support set different headers for different request ?
+headers = (h) ->
+  if h?
+    _etc.headers = h
+  _etc.headers
+
 
 module.exports = {
   P_VERSION
@@ -71,4 +82,6 @@ module.exports = {
   m3u8_iv  # get / set
   dl_thread  # get / set
   output_dir  # get / set
+  auto_remove  # get / set
+  headers  # get / set
 }

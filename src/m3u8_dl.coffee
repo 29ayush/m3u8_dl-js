@@ -4,6 +4,7 @@ async_ = require './async'
 util = require './util'
 log = require './log'
 config = require './config'
+
 do_dl = require './do_dl'
 
 
@@ -16,7 +17,10 @@ _p_help = ->
         --proxy-http IP:PORT    Set http proxy
         --proxy-socks5 IP:PORT  Set socks5 proxy
 
-        --thread NUM  Set number of download thread (default: 1)
+        --thread NUM   Set number of download thread (default: 1)
+        --auto-remove  Remove raw file after decrypt success
+
+        --header NAME:VALUE  Set http header (can use more than once)
 
         --m3u8-base-url URL       Set base URL of the m3u8 file
         --m3u8-key HEX            Set decrypt KEY (in HEX format)
@@ -47,6 +51,11 @@ _p_arg = (args) ->
       hostname: p[0]
       port: Number.parseInt p[1]
     }
+  headers = {}
+  _set_header = (raw) ->
+    name = raw.split(':', 1)
+    value = raw[(name.length + 1) ..]
+    headers[name] = value
 
   o = {}
   while rest.length > 0
@@ -69,6 +78,10 @@ _p_arg = (args) ->
         config.dl_thread t
         if t < 1
           throw new Error "bad thread num #{t}"
+      when '--auto-remove'
+        config.auto_remove true
+      when '--header'
+        _set_header _next()
       when '--m3u8-base-url'
         config.m3u8_base_url _next()
       when '--m3u8-key'
@@ -90,6 +103,10 @@ _p_arg = (args) ->
         o.m3u8 = one
   if (! o.type?) && (! o.m3u8?)
     throw new Error "empty command line"
+  # check set headers
+  if Object.keys(headers).length > 0
+    log.d "use headers #{util.print_json headers}"
+    config.headers headers
   o
 
 _normal = (a) ->

@@ -1,12 +1,7 @@
 # util.coffee, m3u8_dl-js/src/
 
-url = require 'url'
-http = require 'http'
-fs = require 'fs'
-
 async_ = require './async'
 log = require './log'
-config = require './config'
 
 
 last_update = ->
@@ -34,64 +29,6 @@ create_lock_file = (file_path) ->
     throw e
 
 
-# do a simple http GET download a file throw the proxy config
-# TODO support more options ? (like user-agent, referer ? )
-dl_with_proxy = (file_url, filename) ->
-  new Promise (resolve, reject) ->
-    info = url.parse file_url
-    # check proxy
-    proxy = config.proxy()
-    if proxy?
-      switch proxy.type
-        when 'http'
-          opt = {
-            hostname: proxy.hostname
-            port: proxy.port
-            path: file_url
-            headers: {
-              'Host': info.hostname
-            }
-          }
-        when 'socks5'
-          # TODO support socks proxy
-          opt = {
-            # TODO
-          }
-        # else: TODO
-    else  # no proxy
-      opt = {
-        hostname: info.hostname
-        port: info.port
-        path: info.path
-      }
-
-    _on_res = (res) ->
-      # check res code
-      if res.statusCode != 200
-        reject new Error "res code `#{res.statusCode}` is not 200 !"
-      # TODO process gzip compress ?
-      # create write stream
-      w = fs.createWriteStream filename
-      res.pipe(w)
-      res.on 'error', (err) ->
-        reject err
-      w.on 'error', (err) ->
-        reject err
-      w.on 'finish', () ->
-        resolve()
-    # make http request
-    req = http.request opt, _on_res
-    req.on 'error', (err) ->
-      reject err
-    req.on 'aborted', (err) ->
-      if err?
-        reject err
-      else
-        reject new Error "aborted"
-    # DO start request
-    req.end()
-
-
 module.exports = {
   last_update
   print_json
@@ -100,6 +37,4 @@ module.exports = {
   write_file  # async
 
   create_lock_file  # async
-
-  dl_with_proxy  # async
 }

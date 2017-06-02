@@ -1,4 +1,5 @@
 # async.coffee, m3u8_dl-js/src/
+# TODO use node v8.0 util.promisify ?
 
 fs = require 'fs'
 
@@ -45,6 +46,24 @@ file_exist = (file_path) ->
       else
         resolve true
 
+# if file not exist, return null
+get_file_size = (file_path) ->
+  new Promise (resolve, reject) ->
+    fs.stat file_path, (err, stats) ->
+      if err  # never reject
+        resolve null
+      else
+        resolve stats.size
+
+list_dir = (file_path) ->
+  new Promise (resolve, reject) ->
+    fs.readdir file_path, (err, file_list) ->
+      if err
+        reject err
+      else
+        resolve file_list
+
+
 # for file-lock
 fs_open = (file_path, flags) ->
   new Promise (resolve, reject) ->
@@ -72,6 +91,8 @@ module.exports = {
   mv  # async
   rm  # async
   file_exist  # async
+  get_file_size  # async
+  list_dir  # async
 
   fs_open  # async
 }

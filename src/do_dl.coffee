@@ -8,16 +8,29 @@ async_ = require './async'
 util = require './util'
 log = require './log'
 config = require './config'
+
 parse_m3u8 = require './parse_m3u8'
 dl_clip = require './dl_clip'
+dl_with_proxy = require './dl_with_proxy'
 thread_pool = require './thread_pool'
 
 
 _create_meta_file = (m3u8, m3u8_info) ->
+  _save_key = ->
+    o = {}
+    if config.m3u8_key()?
+      o.key = config.m3u8_key().toString 'base64'
+    if config.m3u8_iv()?
+      o.iv = config.m3u8_iv().toString 'base64'
+    o
+
   o = {
     p_version: config.P_VERSION
     m3u8: m3u8
     cwd: process.cwd()
+    # save KEY and IV in meta file
+    decrypt: _save_key()
+
     m3u8_info: m3u8_info
     last_update: util.last_update()
   }
@@ -94,23 +107,16 @@ _check_change_cwd = ->
     fs.unlinkSync config.LOCK_FILE
   # remove LOCK on process exit
   process.on 'exit', _remove_lock
+  # FIXME other ways to exit this process
+  process.on 'SIGINT', () ->
+    log.d "recv SIGINT, exiting .. . "
+    process.exit 0
 
 _check_and_download_key = (m3u8_info) ->
-  _save_key = ->
-    # save KEY and IV in meta file
-    if config.m3u8_key()?
-      m3u8_info.decrypt = {
-        key: config.m3u8_key().toString 'base64'
-      }
-      if config.m3u8_iv()?
-        m3u8_info.decrypt.iv = config.m3u8_iv().toString 'base64'
-
   if config.m3u8_key()?
     # DEBUG
     log.d "use KEY #{config.m3u8_key().toString('hex')} (#{config.m3u8_key().toString('base64')})"
-
-    _save_key()
-    return m3u8_info  # do not override command line
+    return  # do not override command line
   if ! m3u8_info.key?
     return  # no encrypt key info
   # check key method
@@ -119,25 +125,38 @@ _check_and_download_key = (m3u8_info) ->
     return
   key_url = m3u8_info.key.uri
   log.d "download key file #{key_url}"
-  await util.dl_with_proxy key_url, config.RAW_KEY
+  await dl_with_proxy key_url, config.RAW_KEY
   # read key
   key = await async_.read_file_byte config.RAW_KEY
   config.m3u8_key key  # save to config
   # TODO support iv ?
 
-  _save_key()
-  m3u8_info
-
 _download_clips = (m3u8_info) ->
-  worker = (item) ->
-    # TODO
-  # TODO download with multi-thread ?
-  # FIXME no just use loop
+  # single-thread mode: just use loop
+  _single_thread = ->
+    # TODO more error process
+    for i in [0... m3u8_info.clip.length]
+      await dl_clip m3u8_info, i
+  # use thread_pool
+  _multi_thread = (n) ->
+    _worker = (i) ->
+      await dl_clip m3u8_info, i
+    # create task list
+    t = []
+    for i in [0... m3u8_info.clip.length]
+      t.push i
+    pool = thread_pool n
+    await pool.run t, _worker
+
   log.d "download #{m3u8_info.clip.length} clips "
-  # TODO more error process
-  for i in [0... m3u8_info.clip.length]
-    # FIXME
-    await dl_clip m3u8_info, i
+  # check number of download thread
+  thread_n = config.dl_thread()
+  if (! thread_n?) || (thread_n <= 1)
+    await _single_thread()
+  else
+    log.d "dl_thread #{thread_n}"
+    await _multi_thread thread_n
+
 
 do_dl = (m3u8) ->
   # DEBUG
@@ -157,8 +176,7 @@ do_dl = (m3u8) ->
     o.pathname = _path.dirname o.pathname
     config.m3u8_base_url url.format(o)
   # check is remote file (http) or local file
-  # TODO support https:// ?
-  if m3u8.startsWith 'http://'
+  if m3u8.startsWith('http://') || m3u8.startsWith('https://')
     # remote file
     if ! config.m3u8_base_url()?  # not override command line
       _set_base_url m3u8  # set base_url
@@ -167,7 +185,7 @@ do_dl = (m3u8) ->
     # download that m3u8 file
     log.d "download m3u8 file #{m3u8}"
     dl_tmp_file = config.RAW_M3U8 + util.WRITE_REPLACE_FILE_SUFFIX
-    await util.dl_with_proxy m3u8, dl_tmp_file
+    await dl_with_proxy m3u8, dl_tmp_file
     await async_.mv dl_tmp_file, config.RAW_M3U8
     # read that text
     m3u8_text = await async_.read_file config.RAW_M3U8
