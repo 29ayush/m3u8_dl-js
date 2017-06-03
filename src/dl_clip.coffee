@@ -6,10 +6,13 @@ async_ = require './async'
 log = require './log'
 config = require './config'
 decrypt = require './decrypt'
+key_host = require './key_host'
+
 dl_with_proxy = require './dl_with_proxy'
 
 
 _decrypt_clip = (clip) ->
+  # support multi-keys
   _do_decrypt = (c, name) ->
     new Promise (resolve, reject) ->
       r = fs.createReadStream name.encrypted
@@ -25,10 +28,13 @@ _decrypt_clip = (clip) ->
         resolve()
   before_size = await async_.get_file_size clip.name.encrypted
 
-  iv = config.m3u8_iv()
+  key_id = clip.key_id
+  iv = config.m3u8_iv key_id
   if ! iv?
     iv = clip.media_sequence
-  c = decrypt.create_decrypt_stream(config.m3u8_key(), iv)
+  key = await key_host.get_key key_id
+
+  c = decrypt.create_decrypt_stream(key, iv)
   await _do_decrypt c, clip.name
 
   after_size = await async_.get_file_size clip.name.ts_tmp
@@ -40,12 +46,16 @@ _decrypt_clip = (clip) ->
       log.d "auto remove #{clip.name.encrypted}"
       await async_.rm clip.name.encrypted
 
+# support multi-keys
 dl_clip = (m3u8_info, index) ->
   clip = m3u8_info.clip[index]
   # check already exist and skip it
   if await async_.file_exist(clip.name.ts)
     log.d "dl_clip: skip exist file #{clip.name.ts}"
     return
+  # load key before download clip
+  if clip.key_id?
+    await key_host.get_key clip.key_id
   # download file (support proxy)
   try
     clip_url = clip.clip_url
@@ -56,7 +66,7 @@ dl_clip = (m3u8_info, index) ->
     log.e "dl_clip: #{clip.name.ts}: download error ! "
     throw e
   # check need decrypt clip
-  if config.m3u8_key()?
+  if clip.key_id?
     # download one file done, rename it
     await async_.mv clip.name.part, clip.name.encrypted
     await _decrypt_clip clip

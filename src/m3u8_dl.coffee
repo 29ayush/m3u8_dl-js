@@ -14,21 +14,22 @@ _p_help = ->
   Usage:
     -o, --output DIR  Download files to this Directory
 
+    -T, --thread NUM            Set number of download thread (default: 1)
+        --auto-remove           Remove raw file after decrypt success
+    -H, --header NAME:VALUE     Set http header (can use more than once)
         --proxy-http IP:PORT    Set http proxy
         --proxy-socks5 IP:PORT  Set socks5 proxy
+        --m3u8-base-url URL     Set base URL of the m3u8 file
 
-        --thread NUM   Set number of download thread (default: 1)
-        --auto-remove  Remove raw file after decrypt success
+    Set KEY (and IV) for AES-128 decrypt. Use HEX format, base64 format,
+    or local binary file. Use ID to set multi-keys.
 
-        --header NAME:VALUE  Set http header (can use more than once)
-
-        --m3u8-base-url URL       Set base URL of the m3u8 file
-        --m3u8-key HEX            Set decrypt KEY (in HEX format)
-        --m3u8-iv HEX             Set decrypt IV (in HEX format)
-        --m3u8-key-base64 BASE64  Set decrypt KEY (in base64 format)
-        --m3u8-iv-base64 BASE64   Set decrypt IV (in base64 format)
-        --m3u8-key-file FILE      Read decrypt KEY from FILE (in binary format)
-        --m3u8-iv-file FILE       Read decrypt IV from FILE (in binary format)
+        --m3u8-key         [ID:]HEX
+        --m3u8-iv          [ID:]HEX
+        --m3u8-key-base64  [ID:]BASE64
+        --m3u8-iv-base64   [ID:]BASE64
+        --m3u8-key-file    [ID::]FILE
+        --m3u8-iv-file     [ID::]FILE
 
         --version  Show version of this program
         --help     Show this help text
@@ -56,6 +57,40 @@ _p_arg = (args) ->
     name = raw.split(':', 1)
     value = raw[(name.length + 1) ..]
     headers[name] = value
+  # support multi-keys
+  key_file_list = []
+  iv_file_list = []
+  _set_key_iv = (key_iv, format, value) ->
+    if format is 'file'
+      key_id = 0  # default key_id
+      i = value.indexOf '::'
+      if i != -1
+        key_id = Number.parseInt value[0... i]
+        filename = value[(i + 2) ..]
+      else
+        filename = value
+      one = {
+        key_id
+        filename
+      }
+      switch key_iv
+        when 'key'
+          key_file_list.push one
+        when 'iv'
+          iv_file_list.push one
+    else
+      key_id = 0  # default key_id
+      i = value.indexOf ':'
+      if i != -1
+        key_id = Number.parseInt value[0... i]
+        value = value[(i + 1) ..]
+      value = Buffer.from value, format
+      switch key_iv
+        when 'key'
+          config.m3u8_key value, key_id
+        when 'iv'
+          config.m3u8_iv value, key_id
+  # TODO support --continue to just continue download (with meta file ?)
 
   o = {}
   while rest.length > 0
@@ -65,6 +100,17 @@ _p_arg = (args) ->
         o.type = one
       when '-o', '--output'
         config.output_dir _next()
+
+      when '-T', '--thread'
+        t = Number.parseInt _next()
+        config.dl_thread t
+        if t < 1
+          throw new Error "bad thread num #{t}"
+      when '--auto-remove'
+        config.auto_remove true
+      when '-H', '--header'
+        _set_header _next()
+
       when '--proxy-http'
         p = _split_ip_port _next()
         p.type = 'http'
@@ -73,29 +119,23 @@ _p_arg = (args) ->
         p = _split_ip_port _next()
         p.type = 'socks5'
         config.proxy p
-      when '--thread'
-        t = Number.parseInt _next()
-        config.dl_thread t
-        if t < 1
-          throw new Error "bad thread num #{t}"
-      when '--auto-remove'
-        config.auto_remove true
-      when '--header'
-        _set_header _next()
+
       when '--m3u8-base-url'
         config.m3u8_base_url _next()
+
       when '--m3u8-key'
-        config.m3u8_key Buffer.from(_next(), 'hex')
+        _set_key_iv 'key', 'hex', _next()
       when '--m3u8-iv'
-        config.m3u8_iv Buffer.from(_next(), 'hex')
+        _set_key_iv 'iv', 'hex', _next()
       when '--m3u8-key-base64'
-        config.m3u8_key Buffer.from(_next(), 'base64')
+        _set_key_iv 'key', 'base64', _next()
       when '--m3u8-iv-base64'
-        config.m3u8_iv Buffer.from(_next(), 'base64')
+        _set_key_iv 'iv', 'base64', _next()
       when '--m3u8-key-file'
-        o.m3u8_key_file = _next()
+        _set_key_iv 'key', 'file', _next()
       when '--m3u8-iv-file'
-        o.m3u8_iv_file = _next()
+        _set_key_iv 'iv', 'file', _next()
+
       else  # default: m3u8
         # warning before set
         if o.m3u8?
@@ -107,16 +147,35 @@ _p_arg = (args) ->
   if Object.keys(headers).length > 0
     log.d "use headers #{util.print_json headers}"
     config.headers headers
+  # key/iv files to load
+  o.m3u8_key_file = key_file_list
+  o.m3u8_iv_file = iv_file_list
   o
 
 _normal = (a) ->
-  # check load m3u8 key_file and iv_file
-  if a.m3u8_key_file
-    log.d "load KEY file #{a.m3u8_key_file}"
-    config.m3u8_key await async_.read_file_byte(a.m3u8_key_file)
-  if a.m3u8_iv_file
-    log.d "load IV file #{a.m3u8_iv_file}"
-    config.m3u8_iv await async_.read_file_byte(a.m3u8_iv_file)
+  # load key/iv files (support multi-keys)
+  key_list = a.m3u8_key_file
+  iv_list = a.m3u8_iv_file
+  for i in key_list
+    log.d "load KEY (#{i.key_id}) file #{i.filename}"
+    config.m3u8_key i.key_id, await async_.read_file_byte(i.filename)
+  for i in iv_list
+    log.d "load IV (#{i.key_id}) file #{i.filename}"
+    config.m3u8_iv i.key_id, await async_.read_file_byte(i.filename)
+
+  # DEBUG output: key/iv set from command line
+  key = config.get_all_m3u8_key()
+  iv = config.get_all_m3u8_iv()
+  flag_debug = false
+  o = {}
+  if Object.keys(key).length > 0
+    o.key = key
+    flag_debug = true
+  if Object.keys(iv).length > 0
+    o.iv = iv
+    flag_debug = true
+  if flag_debug
+    log.d "use KEY #{util.print_json o}"
 
   await do_dl a.m3u8
 

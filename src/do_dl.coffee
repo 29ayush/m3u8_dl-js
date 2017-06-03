@@ -8,6 +8,7 @@ async_ = require './async'
 util = require './util'
 log = require './log'
 config = require './config'
+key_host = require './key_host'
 
 parse_m3u8 = require './parse_m3u8'
 dl_clip = require './dl_clip'
@@ -16,12 +17,19 @@ thread_pool = require './thread_pool'
 
 
 _create_meta_file = (m3u8, m3u8_info) ->
+  # support multi-keys
   _save_key = ->
-    o = {}
-    if config.m3u8_key()?
-      o.key = config.m3u8_key().toString 'base64'
-    if config.m3u8_iv()?
-      o.iv = config.m3u8_iv().toString 'base64'
+    o = {
+      m3u8_key: {}
+      m3u8_iv: {}
+    }
+    keys = config.get_all_m3u8_key()
+    ivs = config.get_all_m3u8_iv()
+
+    for i of keys
+      o.m3u8_key[i] = keys[i].toString 'base64'
+    for i of ivs
+      o.m3u8_iv[i] = ivs[i].toString 'base64'
     o
 
   o = {
@@ -34,7 +42,7 @@ _create_meta_file = (m3u8, m3u8_info) ->
     m3u8_info: m3u8_info
     last_update: util.last_update()
   }
-  text = util.print_json o
+  text = util.print_json(o) + '\n'
   await util.write_file config.META_FILE, text
 
 _make_filename = (m3u8_info) ->
@@ -56,6 +64,19 @@ _make_filename = (m3u8_info) ->
   for i in [0... m3u8_info.clip.length]
     c = m3u8_info.clip[i]
     c.name = _one_filename i
+  # make key filename (multi-key support)
+  if m3u8_info.key?
+    key = m3u8_info.key
+    key_count = Object.keys(key).length
+
+    len = key_count.toString().length
+    N = config.RAW_KEY
+    for i of key
+      key[i].filename = N[0] + _add_zero(i, len) + N[1]
+    # add key_count
+    m3u8_info.key_count = key_count
+  # add clip_count
+  m3u8_info.clip_count = m3u8_info.clip.length
   m3u8_info
 
 # check and process clip base url
@@ -112,24 +133,6 @@ _check_change_cwd = ->
     log.d "recv SIGINT, exiting .. . "
     process.exit 0
 
-_check_and_download_key = (m3u8_info) ->
-  if config.m3u8_key()?
-    # DEBUG
-    log.d "use KEY #{config.m3u8_key().toString('hex')} (#{config.m3u8_key().toString('base64')})"
-    return  # do not override command line
-  if ! m3u8_info.key?
-    return  # no encrypt key info
-  # check key method
-  if m3u8_info.key.method != 'AES-128'
-    log.e "not support encrypt method `#{m3u8_info.key.method}`"
-    return
-  key_url = m3u8_info.key.uri
-  log.d "download key file #{key_url}"
-  await dl_with_proxy key_url, config.RAW_KEY
-  # read key
-  key = await async_.read_file_byte config.RAW_KEY
-  config.m3u8_key key  # save to config
-  # TODO support iv ?
 
 _download_clips = (m3u8_info) ->
   # single-thread mode: just use loop
@@ -202,11 +205,13 @@ do_dl = (m3u8) ->
   m3u8_info = _make_filename m3u8_info
   m3u8_info = _check_clip_base_url m3u8_info
 
-  # check and download key file (before create meta file to save key)
-  await _check_and_download_key m3u8_info
-
   await _create_meta_file m3u8, m3u8_info
   await _create_list_file m3u8_info
+  # DEBUG output: key_count
+  key_count = m3u8_info.key_count
+  log.d " #{key_count} keys in m3u8 file "
+  # set key_info to key_host before start download
+  key_host.set_key_info m3u8_info.key
 
   await _download_clips m3u8_info
   log.d "[ OK ] all download done. "

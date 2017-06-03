@@ -1,14 +1,14 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.2.0-1 test20170602 2306'
+P_VERSION = 'm3u8_dl-js version 0.2.0-2 test20170603 1635'
 
 
 # local file struct
 LOCK_FILE = 'm3u8_dl.lock'
 META_FILE = 'm3u8_dl.meta.json'
 RAW_M3U8 = 'raw.m3u8'
-RAW_KEY = 'raw.key'  # the key for m3u8
+RAW_KEY = ['raw.', '.key']  # the key for m3u8 (support multi-keys)
 LIST_FILE = 'ffmpeg_merge.list'
 # clip file
 CLIP_SUFFIX_DL_PART = '.ts.part'
@@ -17,7 +17,11 @@ CLIP_SUFFIX_TS = '.ts'
 # TODO support not '.ts' in m3u8 ?
 
 
-_etc = {}
+_etc = {
+  # support multi-keys
+  m3u8_key: {}
+  m3u8_iv: {}
+}
 
 # get / set proxy
 proxy = (p) ->
@@ -30,15 +34,21 @@ m3u8_base_url = (base) ->
     _etc.m3u8_base_url = base
   _etc.m3u8_base_url
 
-m3u8_key = (k) ->
+m3u8_key = (i, k) ->
   if k?
-    _etc.m3u8_key = k
+    _etc.m3u8_key[i] = k
+  _etc.m3u8_key[i]
+
+m3u8_iv = (i, iv) ->
+  if iv?
+    _etc.m3u8_iv[i] = iv
+  _etc.m3u8_iv[i]
+
+get_all_m3u8_key = ->
   _etc.m3u8_key
 
-m3u8_iv = (iv) ->
-  if iv?
-    _etc._m3u8_iv = iv
-  _etc._m3u8_iv
+get_all_m3u8_iv = ->
+  _etc.m3u8_iv
 
 dl_thread = (t) ->
   if t?
@@ -80,6 +90,9 @@ module.exports = {
   m3u8_base_url  # get /set
   m3u8_key  # get / set
   m3u8_iv  # get / set
+  get_all_m3u8_key
+  get_all_m3u8_iv
+
   dl_thread  # get / set
   output_dir  # get / set
   auto_remove  # get / set
