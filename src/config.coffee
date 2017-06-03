@@ -1,7 +1,7 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.2.0-2 test20170603 0044'
+P_VERSION = 'm3u8_dl-js version 0.2.0-2 test20170603 1635'
 
 
 # local file struct
@@ -39,15 +39,15 @@ m3u8_key = (i, k) ->
     _etc.m3u8_key[i] = k
   _etc.m3u8_key[i]
 
-get_m3u8_key = ->
-  _etc.m3u8_key
-
 m3u8_iv = (i, iv) ->
   if iv?
     _etc.m3u8_iv[i] = iv
   _etc.m3u8_iv[i]
 
-get_m3u8_iv = ->
+get_all_m3u8_key = ->
+  _etc.m3u8_key
+
+get_all_m3u8_iv = ->
   _etc.m3u8_iv
 
 dl_thread = (t) ->
@@ -89,9 +89,10 @@ module.exports = {
   proxy  # get / set
   m3u8_base_url  # get /set
   m3u8_key  # get / set
-  get_m3u8_key
   m3u8_iv  # get / set
-  get_m3u8_iv
+  get_all_m3u8_key
+  get_all_m3u8_iv
+
   dl_thread  # get / set
   output_dir  # get / set
   auto_remove  # get / set
