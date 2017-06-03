@@ -173,7 +173,7 @@ _print_percent = (percent) ->
   if percent is 1
     o = '100'
   else
-    o = percent.toFixed 1
+    o = (percent * 1e2).toFixed 1
   o += ' %'
   # right indent self
   _r o, 6  # '99.9 %', '100 %'
