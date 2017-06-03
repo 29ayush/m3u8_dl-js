@@ -64,6 +64,9 @@ dl_clip = (m3u8_info, index) ->
     await dl_with_proxy clip_url, clip.name.part
   catch e
     log.e "dl_clip: #{clip.name.ts}: download error ! "
+    # print stack in multi-thread mode
+    if config.dl_thread()? && (config.dl_thread() > 1)
+      console.log e.stack
     throw e
   # check need decrypt clip
   if clip.key_id?

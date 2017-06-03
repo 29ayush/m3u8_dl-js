@@ -62,7 +62,7 @@ _load_key = (key_id) ->
         one.callback()
 
         # load next key
-        setTimeout _check_load_next, 0  # FIXME
+        setTimeout _check_load_next, 0
         return  # not load one key twice
       # start load this key
       _dl_one_key(one.key_id).catch( (err) ->

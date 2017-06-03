@@ -178,6 +178,8 @@ _normal = (a) ->
     log.d "use KEY #{util.print_json o}"
 
   await do_dl a.m3u8
+  # FIXME process will not exit ?
+  process.exit 0
 
 main = (argv) ->
   try

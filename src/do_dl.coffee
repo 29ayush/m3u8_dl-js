@@ -214,7 +214,8 @@ do_dl = (m3u8) ->
   key_host.set_key_info m3u8_info.key
 
   await _download_clips m3u8_info
-  log.d "[ OK ] all download done. "
+  # not DEBUG
+  log.p "[ OK ] all download done. "
 
 
 module.exports = do_dl  # async

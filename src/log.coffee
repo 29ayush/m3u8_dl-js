@@ -13,9 +13,9 @@ _p = (text) ->
 d = (text) ->
   _p '.D: ' + text
 e = (text) ->
-  _p '.E: ' + text
+  _p '.ERROR: ' + text
 w = (text) ->
-  _p '.W: ' + text
+  _p '.WARNING: ' + text
 p = (text) ->
   _p ': ' + text
 
@@ -23,7 +23,7 @@ p = (text) ->
 module.exports = {
   d  # DEBUG
   e  # ERROR
-  w  # WARN
+  w  # WARNING
 
   p  # normal print
 }
