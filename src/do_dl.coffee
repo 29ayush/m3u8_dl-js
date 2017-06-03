@@ -117,6 +117,10 @@ _check_change_cwd = ->
   if ! to?
     return
   to_path = path.resolve to
+  # if output dir not exist, try to create it
+  if ! await async_.file_exist(to)
+    log.d "create dir #{to_path}"
+    await async_.mkdir to
   process.chdir to
   cwd = process.cwd()
   if path.resolve(cwd) != to_path
@@ -196,7 +200,7 @@ do_dl = (m3u8) ->
     log.d "local m3u8 file #{path.resolve m3u8}"
     m3u8_text = await async_.read_file m3u8
     # change working directory here
-    _check_change_cwd()
+    await _check_change_cwd()
     # create raw m3u8 file
     await util.write_file config.RAW_M3U8, m3u8_text
   # parse m3u8 text, and create meta file
