@@ -63,6 +63,13 @@ list_dir = (file_path) ->
       else
         resolve file_list
 
+mkdir = (file_path) ->
+  new Promise (resolve, reject) ->
+    fs.mkdir file_path, (err) ->
+      if err
+        reject err
+      else
+        resolve()
 
 # for file-lock
 fs_open = (file_path, flags) ->
@@ -82,6 +89,13 @@ rm = (file_path) ->
       else
         resolve()
 
+# sleep: setTimeout
+sleep = (time_ms) ->
+  new Promise (resolve, reject) ->
+    _callback = ->
+      resolve()  # never reject
+    setTimeout _callback, time_ms
+
 
 module.exports = {
   read_file  # async
@@ -94,5 +108,8 @@ module.exports = {
   get_file_size  # async
   list_dir  # async
 
+  mkdir  # async
   fs_open  # async
+
+  sleep  # async
 }
