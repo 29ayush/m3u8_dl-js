@@ -60,6 +60,9 @@ _load_key = (key_id) ->
       # check this key already loaded
       if _etc.key[one.key_id]?
         one.callback()
+
+        # load next key
+        setTimeout _check_load_next, 0  # FIXME
         return  # not load one key twice
       # start load this key
       _dl_one_key(one.key_id).catch( (err) ->
@@ -67,7 +70,7 @@ _load_key = (key_id) ->
         log.e "load key #{one.key_id} failed ! "
         one.callback err
 
-        # try to load next key ?
+        # load next key
         _check_load_next()
       ).then () ->
         one.callback()  # load success
