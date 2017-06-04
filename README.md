@@ -55,3 +55,5 @@ $
 ## LICENSE
 
 `GNU GPL v3+`
+
+<!-- end README.md -->

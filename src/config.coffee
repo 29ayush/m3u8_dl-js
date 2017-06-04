@@ -1,7 +1,7 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.2.0-6 test20170604 1316'
+P_VERSION = 'm3u8_dl-js version 0.2.0-6 test20170604 1529'
 
 
 # local file struct
@@ -16,6 +16,10 @@ CLIP_SUFFIX_DL_PART = '.ts.part'
 CLIP_SUFFIX_ENCRYPTED = '.ts.encrypted'
 CLIP_SUFFIX_TS = '.ts'
 # TODO support not '.ts' in m3u8 ?
+
+# auto retry
+DEFAULT_RETRY_TIMES = 3
+DEFAULT_RETRY_SLEEP = 1
 
 
 _etc = {
@@ -92,6 +96,10 @@ module.exports = {
   CLIP_SUFFIX_DL_PART
   CLIP_SUFFIX_ENCRYPTED
   CLIP_SUFFIX_TS
+
+  DEFAULT_RETRY_TIMES
+  DEFAULT_RETRY_SLEEP
+
 
   proxy  # get / set
   m3u8_base_url  # get /set

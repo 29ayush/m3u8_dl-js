@@ -4,6 +4,7 @@ url = require 'url'
 
 async_ = require './async'
 log = require './log'
+config = require './config'
 
 
 last_update = ->
@@ -42,6 +43,27 @@ get_base_url = (full_url) ->
   o.pathname = path.posix.dirname o.pathname
   url.format(o)
 
+p_bad_command_line = ->
+  log.e 'bad command line, please try `--help` '
+
+p_version = ->
+  # print version
+  console.log config.P_VERSION
+
+check_change_cwd = (create_dir)->
+  to = config.output_dir()
+  if ! to?
+    return
+  to_path = path.resolve to
+  # if output dir not exist, try to create it
+  if (! await async_.file_exist(to)) && create_dir
+    log.d "create dir #{to_path}"
+    await async_.mkdir to
+  process.chdir to
+  cwd = process.cwd()
+  if path.resolve(cwd) != to_path
+    log.w "can not change current directory to `#{to_path}`, current directory is `#{cwd}`"
+
 
 module.exports = {
   last_update
@@ -51,6 +73,9 @@ module.exports = {
   write_file  # async
 
   create_lock_file  # async
+  check_change_cwd  # async
 
   get_base_url
+  p_bad_command_line
+  p_version
 }

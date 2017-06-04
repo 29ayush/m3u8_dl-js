@@ -114,19 +114,7 @@ _create_list_file = (m3u8_info) ->
   # write list file
   await util.write_file config.LIST_FILE, text
 
-_check_change_cwd = ->
-  to = config.output_dir()
-  if ! to?
-    return
-  to_path = path.resolve to
-  # if output dir not exist, try to create it
-  if ! await async_.file_exist(to)
-    log.d "create dir #{to_path}"
-    await async_.mkdir to
-  process.chdir to
-  cwd = process.cwd()
-  if path.resolve(cwd) != to_path
-    log.w "can not change current directory to `#{to_path}`, current directory is `#{cwd}`"
+_create_lock = ->
   # check lock file
   await util.create_lock_file config.LOCK_FILE
 
@@ -195,7 +183,8 @@ do_dl = (m3u8) ->
     if ! config.m3u8_base_url()?  # not override command line
       config.m3u8_base_url util.get_base_url(m3u8)  # set base_url
     # change working directory now
-    await _check_change_cwd()
+    await util.check_change_cwd true
+    await _create_lock()
     # download that m3u8 file
     log.d "download m3u8 file #{m3u8}"
     dl_tmp_file = config.RAW_M3U8 + util.WRITE_REPLACE_FILE_SUFFIX
@@ -207,7 +196,8 @@ do_dl = (m3u8) ->
     log.d "local m3u8 file #{path.resolve m3u8}"
     m3u8_text = await async_.read_file m3u8
     # change working directory here
-    await _check_change_cwd()
+    await util.check_change_cwd true
+    await _create_lock()
     # create raw m3u8 file
     await util.write_file config.RAW_M3U8, m3u8_text
   # parse m3u8 text, and create meta file
