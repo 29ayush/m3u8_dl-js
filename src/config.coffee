@@ -1,7 +1,7 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.2.0-9 test20170604 2047'
+P_VERSION = 'm3u8_dl-js version 0.2.0-10 test20170604 2216'
 
 
 # local file struct
@@ -82,6 +82,11 @@ exit_on_flag = (f) ->
     _etc.exit_on_flag = f
   _etc.exit_on_flag
 
+lock_file_fd = (fd) ->
+  if fd?
+    _etc.lock_file_fd = fd
+  _etc.lock_file_fd
+
 
 module.exports = {
   P_VERSION
@@ -114,4 +119,5 @@ module.exports = {
   headers  # get / set
 
   exit_on_flag  # get / set
+  lock_file_fd  # get / set
 }

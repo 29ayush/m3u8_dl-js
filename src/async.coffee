@@ -81,6 +81,15 @@ fs_open = (file_path, flags) ->
       else
         resolve fd
 
+fs_close = (fd) ->
+  new Promise (resolve, reject) ->
+    fs.close fd, (err) ->
+      if err
+        reject err
+      else
+        resolve()
+
+
 # remove file
 rm = (file_path) ->
   new Promise (resolve, reject) ->
@@ -126,6 +135,7 @@ module.exports = {
 
   mkdir  # async
   fs_open  # async
+  fs_close  # async
 
   sleep  # async
   run_cmd  # async

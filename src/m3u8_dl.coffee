@@ -180,8 +180,17 @@ _normal = (a) ->
 
   await do_dl a.m3u8
   # try to remove lock file
-  if await async_.file_exist config.LOCK_FILE
+  fd = config.lock_file_fd()
+  try  # close file before remove it
+    await async_.fs_close fd
+  catch e
+    # ignore error
+  try
     await async_.rm config.LOCK_FILE
+  catch e
+    # ignore
+  # FIX process will not exit
+  process.exit 0
 
 main = (argv) ->
   try
@@ -196,8 +205,6 @@ main = (argv) ->
       util.p_version()
     else
       await _normal a
-      # FIX process will not exit
-      process.exit 0
 
 _start = ->
   try

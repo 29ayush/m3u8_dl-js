@@ -116,12 +116,16 @@ _create_list_file = (m3u8_info) ->
 
 _create_lock = ->
   # check lock file
-  await util.create_lock_file config.LOCK_FILE
+  fd = await util.create_lock_file config.LOCK_FILE
+  config.lock_file_fd fd
 
   _remove_lock = ->
-    # check lock file exist
+    # close file before remove it
     try
-      fs.accessSync config.LOCK_FILE, fs.constants.R_OK
+      fs.closeSync fd
+    catch e
+      # ignore error
+    try
       fs.unlinkSync config.LOCK_FILE
     catch e
       # ignore if file not exist

@@ -24,9 +24,7 @@ write_file = (file_path, text) ->
 
 create_lock_file = (file_path) ->
   try
-    fd = await async_.fs_open file_path, 'wx'
-    # FIXME TODO remove LOCK file on process exit
-    return fd
+    return await async_.fs_open file_path, 'wx'
   catch e
     log.e "can not create LOCK file #{file_path} "
     throw e
