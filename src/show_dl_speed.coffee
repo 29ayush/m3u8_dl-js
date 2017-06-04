@@ -10,8 +10,8 @@ dl_speed = require './dl_speed'
 # TODO support put_exit_flag file ? check speed 0 ?
 
 _etc = {
-  lock_file_not_exist: false
-  show_speed_zero_once: false
+  ed_print_lock_not_exist: false
+  ed_print_speed_zero: false
 }
 
 _show_dl_speed = (not_print_speed)->
@@ -20,33 +20,42 @@ _show_dl_speed = (not_print_speed)->
     log.d "waiting for #{path.resolve config.META_FILE}"
     return
   # check .lock file exist
-  not_show_speed_zero = false
-  if ! await async_.file_exist(config.LOCK_FILE)
-    not_show_speed_zero = true
-    # only output once
-    if ! _etc.lock_file_not_exist
-      _etc.lock_file_not_exist = true
-      # FIXME TODO move this WARNING down
-      log.w "lock file `#{path.resolve config.LOCK_FILE}` not exist. m3u8_dl-js NOT running ?"
+  if await async_.file_exist config.LOCK_FILE
+    lock_exist = true
+    # reset flag
+    _etc.ed_print_lock_not_exist = false
   else
-    _etc.lock_file_not_exist = false
+    lock_exist = false
 
   await dl_speed.load_meta_file()
   # update (scan) and print one message
   exit_flag = await dl_speed.update()
   # check speed
   speed = dl_speed.get_dl_speed()
+  if (! speed?) || (speed < 1)
+    speed = 0
+  else
+    # reset flag
+    _etc.ed_print_speed_zero = false
+  # print speed
   print_speed = true
-  if ((! speed?) || (speed < 1)) && not_show_speed_zero
-    if _etc.show_speed_zero_once
+  if (! lock_exist) && (speed is 0)
+    if _etc.ed_print_speed_zero
       print_speed = false
     else
-      _etc.show_speed_zero_once = true
-  else
-    _etc.show_speed_zero_once = false
+      _etc.ed_print_speed_zero = true
+  # do print speed before exit
+  if exit_flag
+    not_print_speed = false
   if print_speed && (! not_print_speed)
     console.log dl_speed.print_speed()
-  # FIXME TODO move no LOCK warning here ?
+  # print lock warning
+  if (! lock_exist) && (! exit_flag) && (! not_print_speed)  # not print warning when exit
+    # print warning after speed is zero
+    if ((speed is 0) || _etc.ed_print_speed_zero) && (! _etc.ed_print_lock_not_exist)
+      _etc.ed_print_lock_not_exist = true
+      log.w "lock file `#{path.resolve config.LOCK_FILE}` not exist. m3u8_dl-js NOT running ?"
+
   exit_flag
 
 main = (argv) ->
@@ -58,7 +67,8 @@ main = (argv) ->
   log.d "working directory #{process.cwd()}"
 
   # init scan, but do not print speed
-  await _show_dl_speed true
+  if await _show_dl_speed true
+    return  # if start at done, not enter main loop
   # main loop
   while true
     # sleep before scan again
