@@ -1,12 +1,13 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.2.0-5 test20170604 0143'
+P_VERSION = 'm3u8_dl-js version 0.2.0-6 test20170604 1242'
 
 
 # local file struct
 LOCK_FILE = 'm3u8_dl.lock'
 META_FILE = 'm3u8_dl.meta.json'
+EXIT_FLAG_FILE = 'm3u8_dl.exit.flag'  # exit download process if this file exist
 RAW_M3U8 = 'raw.m3u8'
 RAW_KEY = ['raw.', '.key']  # the key for m3u8 (support multi-keys)
 LIST_FILE = 'ffmpeg_merge.list'
@@ -72,12 +73,18 @@ headers = (h) ->
     _etc.headers = h
   _etc.headers
 
+exit_on_flag = (f) ->
+  if f?
+    _etc.exit_on_flag = f
+  _etc.exit_on_flag
+
 
 module.exports = {
   P_VERSION
 
   LOCK_FILE
   META_FILE
+  EXIT_FLAG_FILE
   RAW_M3U8
   RAW_KEY
   LIST_FILE
@@ -97,4 +104,6 @@ module.exports = {
   output_dir  # get / set
   auto_remove  # get / set
   headers  # get / set
+
+  exit_on_flag  # get / set
 }

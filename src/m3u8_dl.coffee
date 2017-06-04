@@ -16,6 +16,7 @@ _p_help = ->
 
     -T, --thread NUM            Set number of download thread (default: 1)
         --auto-remove           Remove raw file after decrypt success
+        --exit-on-flag          Exit when FLAG file exist
     -H, --header NAME:VALUE     Set http header (can use more than once)
         --proxy-http IP:PORT    Set http proxy
         --proxy-socks5 IP:PORT  Set socks5 proxy
@@ -108,6 +109,8 @@ _p_arg = (args) ->
           throw new Error "bad thread num #{t}"
       when '--auto-remove'
         config.auto_remove true
+      when '--exit-on-flag'
+        config.exit_on_flag true
       when '-H', '--header'
         _set_header _next()
 

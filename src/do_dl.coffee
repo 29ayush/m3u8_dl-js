@@ -137,6 +137,25 @@ _check_change_cwd = ->
     log.d "recv SIGINT, exiting .. . "
     process.exit 0
 
+_check_exit_on_flag = ->
+  _enable_exit_on_flag = ->
+    while true
+      # sleep 1s
+      await async_.sleep 1e3
+      # check flag file exist
+      if await async_.file_exist config.EXIT_FLAG_FILE
+        # try to remove it first
+        await async_.rm config.EXIT_FLAG_FILE
+        # re-check
+        if await async_.file_exist config.EXIT_FLAG_FILE
+          log.w "can not remove FLAG file `#{path.resolve config.EXIT_FLAG_FILE}`, not exit"
+        else
+          log.d "flag file `#{path.resolve config.EXIT_FLAG_FILE}` exist, exiting .. . "
+          process.exit 1  # do exit
+  if config.exit_on_flag()
+    log.d "enable exit_on_flag"
+    _enable_exit_on_flag()
+
 
 _download_clips = (m3u8_info) ->
   # single-thread mode: just use loop
@@ -216,6 +235,9 @@ do_dl = (m3u8) ->
   log.d " #{key_count} keys in m3u8 file "
   # set key_info to key_host before start download
   key_host.set_key_info m3u8_info.key
+
+  # support exit_on_flag
+  _check_exit_on_flag()
 
   await _download_clips m3u8_info
   # not DEBUG
