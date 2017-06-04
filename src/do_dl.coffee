@@ -119,7 +119,12 @@ _create_lock = ->
   await util.create_lock_file config.LOCK_FILE
 
   _remove_lock = ->
-    fs.unlinkSync config.LOCK_FILE
+    # check lock file exist
+    try
+      fs.accessSync config.LOCK_FILE, fs.constants.R_OK
+      fs.unlinkSync config.LOCK_FILE
+    catch e
+      # ignore if file not exist
   # remove LOCK on process exit
   process.on 'exit', _remove_lock
   # FIXME other ways to exit this process

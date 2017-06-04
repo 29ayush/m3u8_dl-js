@@ -179,6 +179,9 @@ _normal = (a) ->
     log.d "use KEY #{util.print_json o}"
 
   await do_dl a.m3u8
+  # try to remove lock file
+  if await async_.file_exist config.LOCK_FILE
+    await async_.rm config.LOCK_FILE
 
 main = (argv) ->
   try

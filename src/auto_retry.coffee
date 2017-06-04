@@ -80,6 +80,10 @@ _etc = {
 
 M3U8_DL_BIN = './m3u8_dl.js'
 _run_m3u8_dl = (args) ->
+  # check lock file before run m3u8_dl
+  if await async_.file_exist config.LOCK_FILE
+    throw new Error "lock file `#{path.resolve config.LOCK_FILE}` already exist "
+
   node = process.argv[0]
   m3u8_dl = path.join __dirname, M3U8_DL_BIN
 
