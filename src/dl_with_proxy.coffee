@@ -17,12 +17,31 @@ config = require './config'
 #  HTTP 307 Temporary Redirect
 #  HTTP 308 Permanent Redirect
 _do_dl = (opt, filename, protocol) ->
-  new Promise (resolve, reject) ->
-    _on_res = (res) ->
-      # TODO support http 302 Found ?
-      # check res code
-      if res.statusCode != 200
-        reject new Error "res code `#{res.statusCode}` is not 200 !"
+  _req_res = (opt, protocol) ->
+    new Promise (resolve, reject) ->
+      _on_res = (res) ->
+        resolve [req, res]
+      # make http/https request
+      switch protocol
+        when 'http:'
+          req = http.request opt, _on_res
+        when 'https:'
+          opt.rejectUnauthorized = false
+          req = https.request opt, _on_res
+        else
+          reject new Error "unknow protocol `#{protocol}`"
+      # FIXME support https-proxy ?
+      req.on 'error', (err) ->
+        reject err
+      req.on 'aborted', (err) ->
+        if err?
+          reject err
+        else
+          reject new Error "aborted"
+      # DO start request
+      req.end()
+  _save_file = (res, filename) ->
+    new Promise (resolve, reject) ->
       # TODO process gzip compress ?
       # create write stream
       w = fs.createWriteStream filename
@@ -33,26 +52,20 @@ _do_dl = (opt, filename, protocol) ->
         reject err
       w.on 'finish', () ->
         resolve()
-    # make http/https request
-    switch protocol
-      when 'http:'
-        req = http.request opt, _on_res
-      when 'https:'
-        opt.rejectUnauthorized = false
-        req = https.request opt, _on_res
-      else
-        throw new Error "unknow protocol `#{protocol}`"
-    # FIXME support https-proxy ?
-    req.on 'error', (err) ->
-      reject err
-    req.on 'aborted', (err) ->
-      if err?
-        reject err
-      else
-        reject new Error "aborted"
-    # DO start request
-    req.end()
 
+  [req, res] = await _req_res opt, protocol
+  # check res code
+  code = res.statusCode
+  switch code
+    when 302
+      location = res.headers['location']
+      log.d "dl_with_proxy: #{filename}: 302 location #{location}"
+      # download again
+      await dl_with_proxy location, filename
+    when 200  # http 200 OK
+      await _save_file res, filename
+    else  # unknow code
+      throw new Error "unknow res code `#{code}`"
 
 # do a simple http GET download a file throw the proxy config
 dl_with_proxy = (file_url, filename) ->
