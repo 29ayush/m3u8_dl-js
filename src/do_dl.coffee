@@ -36,6 +36,8 @@ _create_meta_file = (m3u8, m3u8_info) ->
     p_version: config.P_VERSION
     m3u8: m3u8
     cwd: process.cwd()
+    # save base url
+    m3u8_base_url: config.m3u8_base_url()
     # save KEY and IV in meta file
     decrypt: _save_key()
 
@@ -160,7 +162,6 @@ _check_exit_on_flag = ->
 _download_clips = (m3u8_info) ->
   # single-thread mode: just use loop
   _single_thread = ->
-    # TODO more error process
     for i in [0... m3u8_info.clip.length]
       await dl_clip m3u8_info, i
   # use thread_pool
@@ -188,24 +189,11 @@ do_dl = (m3u8) ->
   # DEBUG
   if config.proxy()?
     log.d "use proxy #{JSON.stringify config.proxy()}"
-
-  _set_base_url = (raw_url) ->
-    _path = path.posix
-    o = url.parse raw_url
-    # clear values
-    o.hash = null
-    o.search = null
-    o.query = null
-    o.path = null
-    o.href = null
-
-    o.pathname = _path.dirname o.pathname
-    config.m3u8_base_url url.format(o)
   # check is remote file (http) or local file
   if m3u8.startsWith('http://') || m3u8.startsWith('https://')
     # remote file
     if ! config.m3u8_base_url()?  # not override command line
-      _set_base_url m3u8  # set base_url
+      config.m3u8_base_url util.get_base_url(m3u8)  # set base_url
     # change working directory now
     await _check_change_cwd()
     # download that m3u8 file

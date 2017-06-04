@@ -130,6 +130,9 @@ _calc_speed_info = (fl) ->
   _etc.last_dl_size = [si.dl_size].concat _etc.last_dl_size
   if _etc.last_dl_size.length > (_TIME_LEFT_SPEED + 1)
     _etc.last_dl_size.pop()
+  # FIX last_dl_size (last 0 item) (fix calc download speed, time_left)
+  if (_etc.last_dl_size.length > 1) && (_etc.last_dl_size[_etc.last_dl_size.length - 1] is 0)
+    _etc.last_dl_size.pop()
   # all_size
   if fl.ts.count < 1
     si.all_size = null
@@ -258,6 +261,14 @@ print_speed = ->
   # output line
   "#{prefix} #{percent} #{speed} #{clip} #{dl_all} #{time}"
 
+# exports function
+
+get_dl_speed = ->
+  _etc.speed_info.dl_speed
+
+get_clip_count = ->
+  _etc.speed_info.clip_count
+
 module.exports = {
   UPDATE_TIME
 
@@ -265,4 +276,7 @@ module.exports = {
   update  # async
 
   print_speed
+
+  get_dl_speed
+  get_clip_count
 }

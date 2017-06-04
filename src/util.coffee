@@ -1,4 +1,6 @@
 # util.coffee, m3u8_dl-js/src/
+path = require 'path'
+url = require 'url'
 
 async_ = require './async'
 log = require './log'
@@ -28,6 +30,18 @@ create_lock_file = (file_path) ->
     log.e "can not create LOCK file #{file_path} "
     throw e
 
+get_base_url = (full_url) ->
+  o = url.parse full_url
+  # clear values
+  o.hash = null
+  o.search = null
+  o.query = null
+  o.path = null
+  o.href = null
+
+  o.pathname = path.posix.dirname o.pathname
+  url.format(o)
+
 
 module.exports = {
   last_update
@@ -37,4 +51,6 @@ module.exports = {
   write_file  # async
 
   create_lock_file  # async
+
+  get_base_url
 }
