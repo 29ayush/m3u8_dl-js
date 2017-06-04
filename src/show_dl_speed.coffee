@@ -2,6 +2,7 @@
 path = require 'path'
 
 async_ = require './async'
+util = require './util'
 log = require './log'
 config = require './config'
 dl_speed = require './dl_speed'
@@ -25,6 +26,7 @@ _show_dl_speed = (not_print_speed)->
     # only output once
     if ! _etc.lock_file_not_exist
       _etc.lock_file_not_exist = true
+      # FIXME TODO move this WARNING down
       log.w "lock file `#{path.resolve config.LOCK_FILE}` not exist. m3u8_dl-js NOT running ?"
   else
     _etc.lock_file_not_exist = false
@@ -44,15 +46,15 @@ _show_dl_speed = (not_print_speed)->
     _etc.show_speed_zero_once = false
   if print_speed && (! not_print_speed)
     console.log dl_speed.print_speed()
+  # FIXME TODO move no LOCK warning here ?
   exit_flag
 
 main = (argv) ->
   # check output directory
   if argv[0]?
     config.output_dir argv[0]
-
-    process.chdir config.output_dir()
-  # default: show current directory
+  # change cwd
+  await util.check_change_cwd()
   log.d "working directory #{process.cwd()}"
 
   # init scan, but do not print speed

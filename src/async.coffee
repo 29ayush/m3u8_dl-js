@@ -2,6 +2,7 @@
 # TODO use node v8.0 util.promisify ?
 
 fs = require 'fs'
+child_process = require 'child_process'
 
 
 read_file = (file_path) ->
@@ -96,6 +97,21 @@ sleep = (time_ms) ->
       resolve()  # never reject
     setTimeout _callback, time_ms
 
+# run shell command, pipe stdin -> stdin, stdout -> stdout, stderr -> stderr, return exit_code
+run_cmd = (args) ->
+  new Promise (resolve, reject) ->
+    cmd = args[0]
+    rest = args[1..]
+    # DEBUG
+    console.log "  run -> #{args.join(' ')}"
+    p = child_process.spawn cmd, rest, {
+      stdio: 'inherit'
+    }
+    p.on 'error', (err) ->
+      reject err
+    p.on 'exit', (exit_code) ->
+      resolve exit_code
+
 
 module.exports = {
   read_file  # async
@@ -112,4 +128,5 @@ module.exports = {
   fs_open  # async
 
   sleep  # async
+  run_cmd  # async
 }

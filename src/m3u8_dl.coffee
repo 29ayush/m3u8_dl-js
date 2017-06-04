@@ -9,7 +9,7 @@ do_dl = require './do_dl'
 
 
 _p_help = ->
-  console.log """
+  console.log '''
   m3u8_dl-js [OPTIONS] M3U8
   Usage:
     -o, --output DIR  Download files to this Directory
@@ -35,29 +35,28 @@ _p_help = ->
         --version  Show version of this program
         --help     Show this help text
   More information online <https://github.com/sceext2/m3u8_dl-js>
-  """
-
-_p_bad_command_line = ->
-  log.e "bad command line, please try `--help` "
+  '''
 
 _p_arg = (args) ->
   rest = args
-
   _next = ->
     o = rest[0]
     rest = rest[1..]
     o
+
   _split_ip_port = (raw) ->
     p = raw.split ':'
     o = {
       hostname: p[0]
       port: Number.parseInt p[1]
     }
+
   headers = {}
   _set_header = (raw) ->
     name = raw.split(':', 1)
     value = raw[(name.length + 1) ..]
     headers[name] = value
+
   # support multi-keys
   key_file_list = []
   iv_file_list = []
@@ -91,7 +90,6 @@ _p_arg = (args) ->
           config.m3u8_key value, key_id
         when 'iv'
           config.m3u8_iv value, key_id
-  # TODO support --continue to just continue download (with meta file ?)
 
   o = {}
   while rest.length > 0
@@ -181,23 +179,22 @@ _normal = (a) ->
     log.d "use KEY #{util.print_json o}"
 
   await do_dl a.m3u8
-  # FIXME process will not exit ?
-  process.exit 0
 
 main = (argv) ->
   try
     a = _p_arg argv
   catch e
-    _p_bad_command_line()
+    util.p_bad_command_line()
     process.exit 1  # bad command line
   switch a.type
     when '--help'
       _p_help()
     when '--version'
-      # print version
-      console.log config.P_VERSION
+      util.p_version()
     else
       await _normal a
+      # FIX process will not exit
+      process.exit 0
 
 _start = ->
   try

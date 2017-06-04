@@ -269,6 +269,9 @@ get_dl_speed = ->
 get_clip_count = ->
   _etc.speed_info.clip_count
 
+get_meta = ->
+  _etc.meta
+
 module.exports = {
   UPDATE_TIME
 
@@ -279,4 +282,5 @@ module.exports = {
 
   get_dl_speed
   get_clip_count
+  get_meta
 }
