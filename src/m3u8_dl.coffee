@@ -1,4 +1,5 @@
 # m3u8_dl.coffee, m3u8_dl-js/src/
+path = require 'path'
 
 async_ = require './async'
 util = require './util'
@@ -189,6 +190,9 @@ _normal = (a) ->
     await async_.rm config.LOCK_FILE
   catch e
     # ignore
+  # check lock file exist
+  if await async_.file_exist config.LOCK_FILE
+    log.e "can not remove LOCK file `#{path.resolve config.LOCK_FILE}`"
   # FIX process will not exit
   process.exit 0
 

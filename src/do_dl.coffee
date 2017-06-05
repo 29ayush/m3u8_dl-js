@@ -1,5 +1,4 @@
 # do_dl.coffee, m3u8_dl-js/src/
-
 path = require 'path'
 url = require 'url'
 fs = require 'fs'
@@ -129,6 +128,9 @@ _create_lock = ->
       fs.unlinkSync config.LOCK_FILE
     catch e
       # ignore if file not exist
+    # check lock file exist
+    if fs.existsSync config.LOCK_FILE
+      log.e "can not remove LOCK file: #{path.resolve config.LOCK_FILE}"
   # remove LOCK on process exit
   process.on 'exit', _remove_lock
   # FIXME other ways to exit this process
@@ -219,7 +221,8 @@ do_dl = (m3u8) ->
   await _create_list_file m3u8_info
   # DEBUG output: key_count
   key_count = m3u8_info.key_count
-  log.d " #{key_count} keys in m3u8 file "
+  if key_count? && (key_count > 0)
+    log.d " #{key_count} keys in m3u8 file "
   # set key_info to key_host before start download
   key_host.set_key_info m3u8_info.key
 
