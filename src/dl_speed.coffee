@@ -41,7 +41,9 @@ _etc = {
 load_meta_file = ->
   text = await async_.read_file config.META_FILE
   _etc.meta = JSON.parse text
-  # TODO meta.p_version check ?
+  # check meta.p_version
+  if _etc.meta.p_version != config.P_VERSION
+    log.w "META file version mismatch: #{_etc.meta.p_version}"
 
 
 _count_file_size = ->
@@ -269,6 +271,9 @@ get_dl_speed = ->
 get_clip_count = ->
   _etc.speed_info.clip_count
 
+get_time_left = ->
+  _etc.speed_info.time_left
+
 get_meta = ->
   _etc.meta
 
@@ -282,5 +287,6 @@ module.exports = {
 
   get_dl_speed
   get_clip_count
+  get_time_left
   get_meta
 }

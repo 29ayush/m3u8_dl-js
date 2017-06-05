@@ -18,6 +18,8 @@ _p_help = ->
         --use-raw-m3u8  Use `raw.m3u8` file for retry
         --sleep SEC     Sleep seconds before next retry (default: 1)
 
+        --remove-part-files  Remove all `.part` files before run m3u8_dl-js
+
         --version  Show version of this program
         --help     Show this help text
   More information online <https://github.com/sceext2/m3u8_dl-js>
@@ -56,6 +58,8 @@ _p_arg = (args) ->
           throw new Error "bad retry sleep #{o.retry_sleep}"
       when '--use-raw-m3u8'
         o.use_raw_m3u8 = true
+      when '--remove-part-files'
+        o.remove_part_files = true
       when '--'
         start_pass = true
 
@@ -70,6 +74,7 @@ _etc = {
   retry: config.DEFAULT_RETRY_TIMES
   retry_sleep: config.DEFAULT_RETRY_SLEEP
   use_raw_m3u8: false
+  remove_part_files: false
   m3u8: null
 
   retry_count: 0
@@ -83,6 +88,14 @@ _run_m3u8_dl = (args) ->
   # check lock file before run m3u8_dl
   if await async_.file_exist config.LOCK_FILE
     throw new Error "lock file `#{path.resolve config.LOCK_FILE}` already exist "
+  # check remove_part_files
+  if _etc.remove_part_files && (await async_.file_exist(config.META_FILE))
+    log.d "AUTO_RETRY: remove all `.part` files .. . "
+    await dl_speed.load_meta_file()
+    clip = dl_speed.get_meta().m3u8_info.clip
+    for c in clip
+      if await async_.file_exist c.name.part
+        await async_.rm c.name.part
 
   node = process.argv[0]
   m3u8_dl = path.join __dirname, M3U8_DL_BIN
@@ -161,6 +174,7 @@ _normal = (a) ->
   if a.retry_sleep?
     _etc.retry_sleep = a.retry_sleep
   _etc.use_raw_m3u8 = a.use_raw_m3u8
+  _etc.remove_part_files = a.remove_part_files
   _etc.m3u8 = a.m3u8
 
   # run m3u8_dl for the first time
