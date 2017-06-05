@@ -83,18 +83,17 @@ _make_filename = (m3u8_info) ->
 # check and process clip base url
 _check_clip_base_url = (m3u8_info) ->
   _check_one_clip = (name, raw_url) ->
-    _path = path.posix  # FIX url path on Windows
-
     o = url.parse raw_url
     if ! o.protocol?
       base = config.m3u8_base_url()
       if ! base?
         log.e "no base URL for m3u8 clip #{name.ts}"
         throw new Error "no base URL"
-      base_url = url.parse base
       # merge base url
-      base_url.pathname = _path.join base_url.pathname, o.pathname
-      url.format base_url
+      if ! base.endsWith('/')
+        base += '/'
+      o = new url.URL raw_url, base
+      url.format o
     else
       raw_url
   # DEBUG
