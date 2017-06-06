@@ -1,6 +1,5 @@
 # do_dl.coffee, m3u8_dl-js/src/
 path = require 'path'
-url = require 'url'
 fs = require 'fs'
 
 async_ = require './async'
@@ -82,25 +81,11 @@ _make_filename = (m3u8_info) ->
 
 # check and process clip base url
 _check_clip_base_url = (m3u8_info) ->
-  _check_one_clip = (name, raw_url) ->
-    o = url.parse raw_url
-    if ! o.protocol?
-      base = config.m3u8_base_url()
-      if ! base?
-        log.e "no base URL for m3u8 clip #{name.ts}"
-        throw new Error "no base URL"
-      # merge base url
-      if ! base.endsWith('/')
-        base += '/'
-      o = new url.URL raw_url, base
-      url.format o
-    else
-      raw_url
   # DEBUG
   if config.m3u8_base_url()?
     log.d "base URL #{config.m3u8_base_url()}"
   for c in m3u8_info.clip
-    c.clip_url = _check_one_clip c.name, c.url
+    c.clip_url = util.check_merge_base_url c.url
   m3u8_info
 
 # create ffmpeg merge list

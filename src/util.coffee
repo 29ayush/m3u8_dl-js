@@ -62,6 +62,21 @@ check_change_cwd = (create_dir)->
   if path.resolve(cwd) != to_path
     log.w "can not change current directory to `#{to_path}`, current directory is `#{cwd}`"
 
+check_merge_base_url = (raw_url) ->
+  o = url.parse raw_url
+  if ! o.protocol?
+    base = config.m3u8_base_url()
+    if ! base?
+      log.e "no base URL for #{raw_url}"
+      throw new Error "no base URL"
+    # merge base url
+    if ! base.endsWith('/')
+      base += '/'
+    o = new url.URL raw_url, base
+    url.format o
+  else
+    raw_url
+
 
 module.exports = {
   last_update
@@ -76,4 +91,6 @@ module.exports = {
   get_base_url
   p_bad_command_line
   p_version
+
+  check_merge_base_url
 }

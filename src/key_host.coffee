@@ -22,7 +22,8 @@ _dl_one_key = (key_id) ->
   # check key method
   if key.method != 'AES-128'
     throw new Error "not support encrypt (KEY) method `#{key.method}`"
-  key_url = key.uri
+  # check base_url
+  key_url = util.check_merge_base_url key.uri
   key_file = key.filename  # local file name
   log.d "download key file #{key_file}: #{key_url}"
   await dl_with_proxy key_url, key_file
