@@ -17,7 +17,7 @@ A simple `m3u8` downloader in `node.js`.
 
 ```
 $ node dist/m3u8_dl.js --version
-m3u8_dl-js version 0.2.0-13 test20170605 1714
+m3u8_dl-js version 0.2.0 test20170606 2238
 ```
 
 

@@ -83,7 +83,7 @@ parse_m3u8 = (raw_m3u8_text) ->
   for l in line
     if l.startsWith '#'
       if l.startsWith INFO
-        clip_s = Number.parseInt l[INFO.length ..]
+        clip_s = JSON.parse l[INFO.length ..].split(',', 1)[0]
       if l.startsWith V
         o.version = l[V.length ..]
       else if l.startsWith MS
