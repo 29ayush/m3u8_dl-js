@@ -1,5 +1,6 @@
 # play_server.coffee, m3u8_dl-js/o/play_server/
 path = require 'path'
+http = require 'http'
 
 express = require 'express'
 
@@ -40,10 +41,10 @@ _serve_m3u8 = (req, res) ->
     else
       # DEBUG
       console.log "DEBUG: meta file `#{config.META_FILE}` not exist !"
-      _send_code res, 404
+      _res_code res, 404
   else  # `XXXX.ts` file
     if ! _etc.meta?
-      _send_code res, 404
+      _res_code res, 404
     else  # check is one clip name
       for c in _etc.meta.m3u8_info.clip
         if u is ('/' + c.name.ts)
@@ -58,12 +59,12 @@ _serve_m3u8 = (req, res) ->
               }
             }
           else
-            _send_code res, 404
+            _res_code res, 404
           return
-      _send_code res, 404
+      _res_code res, 404
 
-_send_code = (res, code) ->
-  text = Buffer.from "HTTP #{code}\n"
+_res_code = (res, code) ->
+  text = Buffer.from "HTTP #{code} #{http.STATUS_CODES[code]}\n"
   res.status code
   res.set 'Content-Type', 'text/plain'
   res.set 'Content-Length', text.length
@@ -74,19 +75,27 @@ _init_server = ->
   app = express()
   serve_m3u8 = express()
   # /m3u8_dl-js/play_m3u8/ -> _serve_m3u8
-  serve_m3u8.get '*', (req, res) ->
+  serve_m3u8.all '*', (req, res) ->
+    # check method
+    if req.method != 'GET'
+      _res_code res, 405
+      return
     _serve_m3u8(req, res).catch( (err) ->
       # FIXME
       console.log err.stack
 
-      _send_code res, 500
+      _res_code res, 500
     ).then () ->
       # TODO
   app.use '/m3u8_dl-js/play_m3u8/', serve_m3u8
 
   # TODO static page ?
   root = express()
-  root.get '*', (req, res) ->
+  root.all '*', (req, res) ->
+    # check method
+    if req.method != 'GET'
+      _res_code res, 405
+      return
     u = req.path  # request url
     switch u
       #when '/'
@@ -98,7 +107,7 @@ _init_server = ->
         res.redirect 302, to
         res.end()
       else  # res 404
-        _send_code res, 404
+        _res_code res, 404
   app.use '/', root
   # init done
   app
@@ -114,14 +123,18 @@ _normal = (a) ->
 
   app = _init_server()
   app.listen _etc.port, '127.0.0.1', () ->
+    play_url = "http://127.0.0.1:#{_etc.port}/m3u8"
+    if a.name?
+      play_url += "?name=#{a.name}"
     # DEBUG
-    console.log "Play at http://127.0.0.1:#{_etc.port}/m3u8"
+    console.log "Play at #{play_url}"
 
 _p_help = ->
   console.log '''
   play_server [OPTIONS] [DIR]
   Usage:
     --port PORT  Port to listen (http server)
+    --name NAME  Add a comment for the m3u8 to play
 
     --version  Show version of this program
     --help     Show this help text
@@ -143,6 +156,8 @@ _p_arg = (args) ->
         o.type = one
       when '--port'
         o.port = Number.parseInt _next()
+      when '--name'
+        o.name = _next()
       else  # default: DIR
         o.root_dir = one
   o
