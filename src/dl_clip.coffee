@@ -47,7 +47,7 @@ _decrypt_clip = (clip) ->
       log.d "auto remove #{clip.name.encrypted}"
       await async_.rm clip.name.encrypted
 
-_dl_one_clip = (file_url, filename) ->
+dl_one = (file_url, filename) ->
   # check use which downloader
   if config.curl_bin()?
     await dl_with_curl file_url, filename
@@ -69,7 +69,7 @@ dl_clip = (m3u8_info, index) ->
     clip_url = clip.clip_url
     # DEBUG
     log.d "dl_clip: #{clip.name.ts}: #{clip_url}"
-    await _dl_one_clip clip_url, clip.name.part
+    await dl_one clip_url, clip.name.part
   catch e
     log.e "dl_clip: #{clip.name.ts}: download error ! "
     # print stack in multi-thread mode
@@ -86,5 +86,5 @@ dl_clip = (m3u8_info, index) ->
     await async_.mv clip.name.part, clip.name.ts
   # download one clip done
 
-
+dl_clip.dl_one = dl_one  # async
 module.exports = dl_clip  # async

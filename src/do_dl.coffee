@@ -10,7 +10,6 @@ key_host = require './key_host'
 
 parse_m3u8 = require './parse_m3u8'
 dl_clip = require './dl_clip'
-dl_with_proxy = require './dl_with_proxy'
 thread_pool = require './thread_pool'
 
 
@@ -183,7 +182,7 @@ do_dl = (m3u8) ->
     # download that m3u8 file
     log.d "download m3u8 file #{m3u8}"
     dl_tmp_file = config.RAW_M3U8 + util.WRITE_REPLACE_FILE_SUFFIX
-    await dl_with_proxy m3u8, dl_tmp_file
+    await dl_clip.dl_one m3u8, dl_tmp_file
     await async_.mv dl_tmp_file, config.RAW_M3U8
     # read that text
     m3u8_text = await async_.read_file config.RAW_M3U8
