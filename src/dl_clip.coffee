@@ -9,6 +9,7 @@ decrypt = require './decrypt'
 key_host = require './key_host'
 
 dl_with_proxy = require './dl_with_proxy'
+dl_with_curl = require './dl_with_curl'
 
 
 _decrypt_clip = (clip) ->
@@ -46,6 +47,13 @@ _decrypt_clip = (clip) ->
       log.d "auto remove #{clip.name.encrypted}"
       await async_.rm clip.name.encrypted
 
+_dl_one_clip = (file_url, filename) ->
+  # check use which downloader
+  if config.curl_bin()?
+    await dl_with_curl file_url, filename
+  else
+    await dl_with_proxy file_url, filename
+
 # support multi-keys
 dl_clip = (m3u8_info, index) ->
   clip = m3u8_info.clip[index]
@@ -61,7 +69,7 @@ dl_clip = (m3u8_info, index) ->
     clip_url = clip.clip_url
     # DEBUG
     log.d "dl_clip: #{clip.name.ts}: #{clip_url}"
-    await dl_with_proxy clip_url, clip.name.part
+    await _dl_one_clip clip_url, clip.name.part
   catch e
     log.e "dl_clip: #{clip.name.ts}: download error ! "
     # print stack in multi-thread mode

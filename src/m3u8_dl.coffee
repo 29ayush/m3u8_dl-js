@@ -21,6 +21,7 @@ _p_help = ->
     -H, --header NAME:VALUE     Set http header (can use more than once)
         --proxy-http IP:PORT    Set http proxy
         --proxy-socks5 IP:PORT  Set socks5 proxy
+        --dl-with-curl CURL     Download clips with cURL
         --m3u8-base-url URL     Set base URL of the m3u8 file
 
     Set KEY (and IV) for AES-128 decrypt. Use HEX format, base64 format,
@@ -121,6 +122,8 @@ _p_arg = (args) ->
         p = _split_ip_port _next()
         p.type = 'socks5'
         config.proxy p
+      when '--dl-with-curl'
+        config.curl_bin _next()
 
       when '--m3u8-base-url'
         config.m3u8_base_url _next()
