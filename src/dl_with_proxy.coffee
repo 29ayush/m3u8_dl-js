@@ -109,7 +109,8 @@ dl_with_proxy = (file_url, filename) ->
 
           agent: agent  # use socks5 proxy
         }
-      # else: unknow proxy type ?
+      else
+        throw new Error "unknow proxy.type #{proxy.type}"
   else  # no proxy
     opt = {
       hostname: info.hostname

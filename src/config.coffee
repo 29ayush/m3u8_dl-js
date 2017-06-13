@@ -1,7 +1,7 @@
 # config.coffee, m3u8_dl-js/src/
 
 # m3u8_dl program version
-P_VERSION = 'm3u8_dl-js version 0.3.0-2 test20170612 1649'
+P_VERSION = 'm3u8_dl-js version 0.3.0-3 test20170613 2206'
 
 
 # local file struct
@@ -87,6 +87,11 @@ lock_file_fd = (fd) ->
     _etc.lock_file_fd = fd
   _etc.lock_file_fd
 
+curl_bin = (bin) ->
+  if bin?
+    _etc.curl_bin = bin
+  _etc.curl_bin
+
 
 module.exports = {
   P_VERSION
@@ -120,4 +125,6 @@ module.exports = {
 
   exit_on_flag  # get / set
   lock_file_fd  # get / set
+
+  curl_bin  # get / set
 }

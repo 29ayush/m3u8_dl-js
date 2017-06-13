@@ -77,6 +77,12 @@ check_merge_base_url = (raw_url) ->
   else
     raw_url
 
+# run command and check exit_code is 0  (else will throw Error)
+run_check = (cmd) ->
+  exit_code = await async_.run_cmd cmd
+  if exit_code != 0
+    throw new Error "run command FAILED  (exit_code = #{exit_code})"
+
 
 module.exports = {
   last_update
@@ -87,6 +93,7 @@ module.exports = {
 
   create_lock_file  # async
   check_change_cwd  # async
+  run_check  # async
 
   get_base_url
   p_bad_command_line
