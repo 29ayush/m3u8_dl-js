@@ -54,7 +54,7 @@ _p_arg = (args) ->
 
   headers = {}
   _set_header = (raw) ->
-    name = raw.split(':', 1)
+    name = raw.split(':', 1)[0]
     value = raw[(name.length + 1) ..]
     headers[name] = value
 
