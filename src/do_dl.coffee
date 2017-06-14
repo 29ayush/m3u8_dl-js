@@ -7,6 +7,7 @@ util = require './util'
 log = require './log'
 config = require './config'
 key_host = require './key_host'
+dl_speed = require './dl_speed'
 
 parse_m3u8 = require './parse_m3u8'
 dl_clip = require './dl_clip'
@@ -141,6 +142,14 @@ _check_exit_on_flag = ->
     _enable_exit_on_flag()
 
 
+_count_clip_time = (m3u8_info) ->
+  o = 0
+  for i in m3u8_info.clip
+    t = i.time_s
+    if t >= 0
+      o += t
+  o
+
 _download_clips = (m3u8_info) ->
   # single-thread mode: just use loop
   _single_thread = ->
@@ -157,7 +166,8 @@ _download_clips = (m3u8_info) ->
     pool = thread_pool n
     await pool.run t, _worker
 
-  log.d "download #{m3u8_info.clip.length} clips "
+  video_time = dl_speed.print_time _count_clip_time(m3u8_info)
+  log.d "download #{m3u8_info.clip.length} clips, video time #{video_time} "
   # check number of download thread
   thread_n = config.dl_thread()
   if (! thread_n?) || (thread_n <= 1)

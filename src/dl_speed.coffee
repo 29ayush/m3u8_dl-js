@@ -227,7 +227,7 @@ _print_dl_size_all = (dl_size, all_size) ->
   # indent self  (9 + 2 + 9)
   _r o, 20  # '0', '1024 Byte', '1024 KB', '1023.9 MB'; 'unknow', '1023.9 MB'
 
-_print_rest_time = (time_s) ->
+print_time = (time_s) ->
   _add_zero = (raw) ->
     o = raw.toString()
     if o.length < 2
@@ -247,8 +247,11 @@ _print_rest_time = (time_s) ->
     o = _add_zero(m) + ':' + _add_zero(s)
     if h > 0
       o = _add_zero(h) + ':' + o
+  o
+
+_print_rest_time = (time_s) ->
   # indent self
-  _r o, 8  # '00:00:00', 'UNKNOW'
+  _r print_time(time_s), 8  # '00:00:00', 'UNKNOW'
 
 print_speed = ->
   si = _etc.speed_info
@@ -259,6 +262,8 @@ print_speed = ->
   clip = _print_clip_count si.clip_count
   dl_all = _print_dl_size_all si.dl_size, si.all_size
   time = _print_rest_time si.time_left
+
+  # TODO print clip_time/all_time ?
 
   # output line
   "#{prefix} #{percent} #{speed} #{clip} #{dl_all} #{time}"
@@ -284,6 +289,7 @@ module.exports = {
   update  # async
 
   print_speed
+  print_time
 
   get_dl_speed
   get_clip_count

@@ -83,6 +83,8 @@ _put_flag_file = (speed_keep_s) ->
   log.d "now retry (speed 0 for #{speed_keep_s} s ): put exit flag file `#{path.resolve config.EXIT_FLAG_FILE}`"
   await util.write_file config.EXIT_FLAG_FILE, ''  # create null flag file
 
+
+# TODO re-write show_dl_speed state process with a state machine class
 # some reset (mode) functions
 
 _reset_flags = ->
